@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b0d10">
+    <title>x402 Payment Firewall</title>
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <style>
+      :root { color-scheme: dark; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+      body { max-width: 760px; margin: 0 auto; padding: 64px 24px; background: #0b0d10; color: #e8edf2; }
+      h1 { font-size: clamp(2rem, 7vw, 4rem); margin-bottom: 12px; }
+      .brand { display: flex; align-items: center; gap: 20px; }
+      .brand img { width: 64px; height: 64px; border-radius: 12px; }
+      p { color: #aab4c0; line-height: 1.6; }
+      code { color: #7ee787; }
+      section { border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-top: 28px; }
+      a { color: #58a6ff; }
+    </style>
+  </head>
+  <body>
+    <div class="brand">
+      <img src="/favicon-192.png" alt="x402 Payment Firewall logo">
+      <h1>x402 Payment Firewall</h1>
+    </div>
+    <p>Local-first policy enforcement before an AI agent creates an x402 payment signature.</p>
+    <section>
+      <p><code>GET /api/health</code></p>
+      <p><code>POST /api/evaluate</code></p>
+      <p>The API supports free mode and x402 V2 paid mode with Bazaar discovery metadata.</p>
+    </section>
+  </body>
+</html>

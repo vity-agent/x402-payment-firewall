@@ -1,0 +1,47 @@
+{
+  "name": "x402-payment-firewall",
+  "version": "0.1.0",
+  "description": "Local-first policy firewall for x402 payment creation.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/*.js",
+    "dist/*.js.map",
+    "dist/*.d.ts",
+    "dist/*.d.ts.map",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run check && npm run build && node --test dist/tests/*.test.js",
+    "check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.api.json"
+  },
+  "keywords": [
+    "x402",
+    "payments",
+    "ai-agents",
+    "security",
+    "firewall"
+  ],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0"
+  },
+  "dependencies": {
+    "@x402/core": "^2.14.0",
+    "@x402/evm": "^2.14.0",
+    "@x402/extensions": "^2.14.0"
+  }
+}

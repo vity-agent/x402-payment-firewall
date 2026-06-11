@@ -1,0 +1,177 @@
+import { PaymentFirewall } from "./firewall.js";
+import type { FirewallPolicy, PaymentEvaluationInput } from "./types.js";
+
+const MAX_BODY_BYTES = 64 * 1024;
+const MAX_STRING_LENGTH = 2_048;
+const MAX_LIST_LENGTH = 100;
+
+export interface HostedEvaluateRequest {
+  policy: FirewallPolicy;
+  input: PaymentEvaluationInput;
+}
+
+export interface HostedApiConfig {
+  paymentsEnabled: boolean;
+  payToAddress?: string;
+}
+
+export interface HostedEvaluateResponse {
+  mode: "free" | "paid";
+  decision: Awaited<ReturnType<PaymentFirewall["evaluate"]>>;
+  limitations: string[];
+}
+
+export function getHostedApiConfig(env: NodeJS.ProcessEnv = process.env): HostedApiConfig {
+  const paymentsEnabled = env.PAYMENTS_ENABLED?.toLowerCase() === "true";
+  const payToAddress = env.PAY_TO_ADDRESS?.trim();
+
+  if (payToAddress && !/^0x[a-fA-F0-9]{40}$/.test(payToAddress)) {
+    throw new Error("PAY_TO_ADDRESS must be a valid EVM address");
+  }
+
+  return {
+    paymentsEnabled,
+    ...(payToAddress ? { payToAddress } : {}),
+  };
+}
+
+export function parseHostedEvaluateRequest(body: unknown): HostedEvaluateRequest {
+  if (Buffer.byteLength(JSON.stringify(body ?? null), "utf8") > MAX_BODY_BYTES) {
+    throw new Error("request body exceeds 64 KiB");
+  }
+  if (!isRecord(body)) throw new Error("request body must be a JSON object");
+  if (!isRecord(body.policy)) throw new Error("policy must be an object");
+  if (!isRecord(body.input)) throw new Error("input must be an object");
+
+  validatePolicy(body.policy);
+  validateInput(body.input);
+  return body as unknown as HostedEvaluateRequest;
+}
+
+export async function evaluateHostedRequest(
+  request: HostedEvaluateRequest,
+): Promise<HostedEvaluateResponse> {
+  // Hosted mode intentionally excludes stateful controls. Those remain in the local SDK.
+  const { dailyBudgets: _dailyBudgets, duplicateTtlMs: _duplicateTtlMs, ...staticPolicy } = request.policy;
+  const statelessPolicy: FirewallPolicy = {
+    ...staticPolicy,
+  };
+  const firewall = new PaymentFirewall({ policy: statelessPolicy });
+  const decision = await firewall.evaluate(request.input);
+
+  return {
+    mode: "free",
+    decision,
+    limitations: [
+      "daily budget enforcement is available only in the local SDK",
+      "duplicate prevention is available only in the local SDK",
+      "hosted decisions do not create or sign payment payloads",
+    ],
+  };
+}
+
+function validatePolicy(policy: Record<string, unknown>): void {
+  validateStringArray(policy.allowedDomains, "allowedDomains");
+  validateStringArray(policy.allowedNetworks, "allowedNetworks");
+  validateStringArray(policy.allowedAssets, "allowedAssets");
+  validateStringArray(policy.allowedSchemes, "allowedSchemes");
+  validateStringArray(policy.allowedRecipients, "allowedRecipients");
+  validateAmountLimits(policy.maxPerRequest, "maxPerRequest");
+  validateAmountLimits(policy.dailyBudgets, "dailyBudgets");
+
+  if (policy.bindRequestDomain !== undefined && typeof policy.bindRequestDomain !== "boolean") {
+    throw new Error("bindRequestDomain must be a boolean");
+  }
+  if (policy.recipientPins !== undefined) {
+    if (!isRecord(policy.recipientPins)) throw new Error("recipientPins must be an object");
+    for (const [domain, recipients] of Object.entries(policy.recipientPins)) {
+      validateString(domain, "recipientPins domain");
+      validateStringArray(recipients, `recipientPins.${domain}`, true);
+    }
+  }
+}
+
+function validateInput(input: Record<string, unknown>): void {
+  if (!isRecord(input.paymentRequired)) throw new Error("input.paymentRequired must be an object");
+  if (!isRecord(input.selectedRequirements)) throw new Error("input.selectedRequirements must be an object");
+  if (!isRecord(input.request)) throw new Error("input.request must be an object");
+
+  const paymentRequired = input.paymentRequired;
+  if (paymentRequired.x402Version !== 2) throw new Error("only x402Version 2 is supported");
+  if (!isRecord(paymentRequired.resource)) throw new Error("paymentRequired.resource must be an object");
+  validateUrl(paymentRequired.resource.url, "paymentRequired.resource.url");
+  validateOptionalString(paymentRequired.resource.description, "paymentRequired.resource.description");
+  validateOptionalString(paymentRequired.resource.mimeType, "paymentRequired.resource.mimeType");
+
+  if (!Array.isArray(paymentRequired.accepts) || paymentRequired.accepts.length === 0 ||
+      paymentRequired.accepts.length > 20) {
+    throw new Error("paymentRequired.accepts must contain 1-20 requirements");
+  }
+  for (const requirement of paymentRequired.accepts) validateRequirement(requirement);
+  validateRequirement(input.selectedRequirements);
+
+  validateString(input.request.agentId, "request.agentId");
+  validateOptionalString(input.request.sessionId, "request.sessionId");
+  validateOptionalString(input.request.tool, "request.tool");
+  validateOptionalString(input.request.intent, "request.intent");
+  validateOptionalString(input.request.method, "request.method");
+  if (input.request.url !== undefined) validateUrl(input.request.url, "request.url");
+  validateOptionalString(input.request.bodyHash, "request.bodyHash");
+}
+
+function validateRequirement(value: unknown): void {
+  if (!isRecord(value)) throw new Error("payment requirement must be an object");
+  validateString(value.scheme, "requirement.scheme");
+  validateString(value.network, "requirement.network");
+  validateAtomicAmount(value.amount, "requirement.amount");
+  validateString(value.asset, "requirement.asset");
+  validateString(value.payTo, "requirement.payTo");
+}
+
+function validateAmountLimits(value: unknown, field: string): void {
+  if (value === undefined) return;
+  if (!Array.isArray(value) || value.length > MAX_LIST_LENGTH) {
+    throw new Error(`${field} must be an array with at most ${MAX_LIST_LENGTH} entries`);
+  }
+  for (const limit of value) {
+    if (!isRecord(limit)) throw new Error(`${field} entries must be objects`);
+    validateString(limit.network, `${field}.network`);
+    validateString(limit.asset, `${field}.asset`);
+    validateAtomicAmount(limit.amount, `${field}.amount`);
+  }
+}
+
+function validateStringArray(value: unknown, field: string, required = false): void {
+  if (value === undefined && !required) return;
+  if (!Array.isArray(value) || value.length > MAX_LIST_LENGTH) {
+    throw new Error(`${field} must be an array with at most ${MAX_LIST_LENGTH} entries`);
+  }
+  for (const item of value) validateString(item, field);
+}
+
+function validateAtomicAmount(value: unknown, field: string): void {
+  validateString(value, field);
+  if (!/^(0|[1-9]\d*)$/.test(value as string)) throw new Error(`${field} must use atomic units`);
+}
+
+function validateUrl(value: unknown, field: string): void {
+  validateString(value, field);
+  const url = new URL(value as string);
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error(`${field} must use http or https`);
+  }
+}
+
+function validateOptionalString(value: unknown, field: string): void {
+  if (value !== undefined) validateString(value, field);
+}
+
+function validateString(value: unknown, field: string): void {
+  if (typeof value !== "string" || value.length === 0 || value.length > MAX_STRING_LENGTH) {
+    throw new Error(`${field} must be a non-empty string up to ${MAX_STRING_LENGTH} characters`);
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
