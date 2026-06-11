@@ -70,6 +70,15 @@ test("loads the configured public pay-to address while payments stay disabled", 
   assert.equal(config.payToAddress, "0xe3f47081bc0419cf6c41de287a813622c3e893b2");
 });
 
+test("enables payment mode when pay-to is configured and PAYMENTS_ENABLED is omitted", () => {
+  const config = getHostedApiConfig({
+    PAY_TO_ADDRESS: "0xe3f47081bc0419cf6c41de287a813622c3e893b2",
+  });
+
+  assert.equal(config.paymentsEnabled, true);
+  assert.equal(config.payToAddress, "0xe3f47081bc0419cf6c41de287a813622c3e893b2");
+});
+
 test("rejects an invalid configured pay-to address", () => {
   assert.throws(
     () => getHostedApiConfig({ PAY_TO_ADDRESS: "not-an-address" }),

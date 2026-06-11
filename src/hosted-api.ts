@@ -22,8 +22,9 @@ export interface HostedEvaluateResponse {
 }
 
 export function getHostedApiConfig(env: NodeJS.ProcessEnv = process.env): HostedApiConfig {
-  const paymentsEnabled = env.PAYMENTS_ENABLED?.toLowerCase() === "true";
   const payToAddress = env.PAY_TO_ADDRESS?.trim();
+  const paymentsEnabled = env.PAYMENTS_ENABLED?.toLowerCase() === "true"
+    || (env.PAYMENTS_ENABLED === undefined && Boolean(payToAddress));
 
   if (payToAddress && !/^0x[a-fA-F0-9]{40}$/.test(payToAddress)) {
     throw new Error("PAY_TO_ADDRESS must be a valid EVM address");

@@ -46,7 +46,9 @@ PAY_TO_ADDRESS=0xe3f47081bc0419cf6c41de287a813622c3e893b2
 ```
 
 `PAY_TO_ADDRESS` is stored now for the future paid endpoint. Setting
-`PAYMENTS_ENABLED=true` activates the x402 V2 seller flow.
+`PAYMENTS_ENABLED=true` activates the x402 V2 seller flow. If
+`PAYMENTS_ENABLED` is omitted, the presence of `PAY_TO_ADDRESS` also enables
+paid mode. Set `PAYMENTS_ENABLED=false` only if you want to force free mode.
 
 Paid mode defaults to Base Sepolia and the public x402 test facilitator:
 
