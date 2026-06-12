@@ -1,0 +1,450 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "x402 Payment Firewall API",
+    "version": "0.1.0",
+    "description": "Evaluate x402 payment challenges against caller-defined security policies before an AI agent signs or pays.",
+    "contact": {
+      "email": "yaumglyy@gmail.com",
+      "url": "https://github.com/vity-agent/x402-payment-firewall"
+    },
+    "x-guidance": "Use POST /api/evaluate before an agent signs an x402 payment. Submit the merchant PaymentRequired object, the selected payment requirements, request context, and the policy to enforce. A decision of allow means the supplied payment satisfies the stateless hosted checks; signing still happens locally. GET /api/health is free and reports service and payment configuration."
+  },
+  "servers": [
+    {
+      "url": "https://x402-payment-firewall.vercel.app",
+      "description": "Production API"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Firewall",
+      "description": "Pre-signing x402 payment policy evaluation"
+    },
+    {
+      "name": "Service",
+      "description": "Free service metadata and health"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Get service and payment configuration",
+        "description": "Free endpoint that reports whether x402 payment mode is enabled and which network, price, and resource URL are configured.",
+        "tags": ["Service"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "status": "ok",
+                  "service": "x402-payment-firewall",
+                  "version": "0.1.0",
+                  "payments": {
+                    "enabled": true,
+                    "configured": true,
+                    "mode": "x402",
+                    "network": "eip155:84532",
+                    "price": "$0.001",
+                    "resource": "https://x402-payment-firewall.vercel.app/api/evaluate"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerConfigurationError"
+          }
+        }
+      }
+    },
+    "/api/evaluate": {
+      "post": {
+        "operationId": "evaluatePayment",
+        "summary": "Evaluate an x402 payment before signing",
+        "description": "Checks an x402 v2 payment challenge against domain, network, asset, scheme, recipient, recipient-pinning, request-binding, and per-request amount policies. The hosted endpoint is stateless; daily budgets and duplicate prevention remain local SDK features.",
+        "tags": ["Firewall"],
+        "security": [
+          {
+            "x402": []
+          }
+        ],
+        "x-payment-info": {
+          "price": {
+            "mode": "fixed",
+            "currency": "USD",
+            "amount": "0.001000"
+          },
+          "protocols": [
+            {
+              "x402": {}
+            }
+          ]
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateRequest"
+              },
+              "example": {
+                "policy": {
+                  "allowedDomains": ["api.example.com"],
+                  "allowedNetworks": ["eip155:84532"],
+                  "allowedAssets": ["0x036CbD53842c5426634e7929541eC2318f3dCF7e"],
+                  "allowedSchemes": ["exact"],
+                  "maxPerRequest": [
+                    {
+                      "network": "eip155:84532",
+                      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+                      "amount": "20000"
+                    }
+                  ]
+                },
+                "input": {
+                  "paymentRequired": {
+                    "x402Version": 2,
+                    "resource": {
+                      "url": "https://api.example.com/weather"
+                    },
+                    "accepts": [
+                      {
+                        "scheme": "exact",
+                        "network": "eip155:84532",
+                        "amount": "10000",
+                        "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+                        "payTo": "0x209693Bc6afc0C5328bA36FaF03C514EF312287C"
+                      }
+                    ]
+                  },
+                  "selectedRequirements": {
+                    "scheme": "exact",
+                    "network": "eip155:84532",
+                    "amount": "10000",
+                    "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+                    "payTo": "0x209693Bc6afc0C5328bA36FaF03C514EF312287C"
+                  },
+                  "request": {
+                    "agentId": "research-agent",
+                    "method": "GET",
+                    "url": "https://api.example.com/weather"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment policy decision",
+            "headers": {
+              "PAYMENT-RESPONSE": {
+                "description": "Base64-encoded x402 v2 settlement response",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid evaluation request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "headers": {
+              "PAYMENT-REQUIRED": {
+                "description": "Base64-encoded x402 v2 PaymentRequired challenge",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRequiredError"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "x402": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "PAYMENT-SIGNATURE",
+        "description": "Base64-encoded x402 v2 payment payload. Obtain payment requirements from the PAYMENT-REQUIRED header returned by an unpaid request."
+      }
+    },
+    "responses": {
+      "ServerConfigurationError": {
+        "description": "Invalid server configuration",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "AtomicAmount": {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]*)$",
+        "description": "Non-negative integer amount in the asset's smallest unit",
+        "examples": ["1000"]
+      },
+      "AmountLimit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["network", "asset", "amount"],
+        "properties": {
+          "network": {
+            "type": "string",
+            "description": "CAIP-2 network identifier"
+          },
+          "asset": {
+            "type": "string"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/AtomicAmount"
+          }
+        }
+      },
+      "FirewallPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "allowedDomains": {
+            "type": "array",
+            "maxItems": 100,
+            "items": { "type": "string" }
+          },
+          "allowedNetworks": {
+            "type": "array",
+            "maxItems": 100,
+            "items": { "type": "string" }
+          },
+          "allowedAssets": {
+            "type": "array",
+            "maxItems": 100,
+            "items": { "type": "string" }
+          },
+          "allowedSchemes": {
+            "type": "array",
+            "maxItems": 100,
+            "items": { "type": "string" }
+          },
+          "allowedRecipients": {
+            "type": "array",
+            "maxItems": 100,
+            "items": { "type": "string" }
+          },
+          "recipientPins": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "maxItems": 100,
+              "items": { "type": "string" }
+            }
+          },
+          "maxPerRequest": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/AmountLimit"
+            }
+          },
+          "dailyBudgets": {
+            "type": "array",
+            "maxItems": 100,
+            "description": "Accepted for SDK compatibility but not enforced by the stateless hosted endpoint",
+            "items": {
+              "$ref": "#/components/schemas/AmountLimit"
+            }
+          },
+          "bindRequestDomain": {
+            "type": "boolean",
+            "default": true
+          },
+          "duplicateTtlMs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Accepted for SDK compatibility but not enforced by the stateless hosted endpoint"
+          }
+        }
+      },
+      "PaymentRequirements": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scheme", "network", "amount", "asset", "payTo"],
+        "properties": {
+          "scheme": { "type": "string" },
+          "network": { "type": "string" },
+          "amount": { "$ref": "#/components/schemas/AtomicAmount" },
+          "asset": { "type": "string" },
+          "payTo": { "type": "string" },
+          "maxTimeoutSeconds": { "type": "integer", "minimum": 1 },
+          "extra": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "PaymentRequired": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["x402Version", "resource", "accepts"],
+        "properties": {
+          "x402Version": { "type": "integer", "const": 2 },
+          "resource": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["url"],
+            "properties": {
+              "url": { "type": "string", "format": "uri" },
+              "description": { "type": "string" },
+              "mimeType": { "type": "string" }
+            }
+          },
+          "accepts": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": { "$ref": "#/components/schemas/PaymentRequirements" }
+          },
+          "extensions": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "RequestContext": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["agentId"],
+        "properties": {
+          "agentId": { "type": "string", "minLength": 1 },
+          "sessionId": { "type": "string" },
+          "tool": { "type": "string" },
+          "intent": { "type": "string" },
+          "method": { "type": "string" },
+          "url": { "type": "string", "format": "uri" },
+          "bodyHash": { "type": "string" }
+        }
+      },
+      "EvaluateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["policy", "input"],
+        "properties": {
+          "policy": { "$ref": "#/components/schemas/FirewallPolicy" },
+          "input": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["paymentRequired", "selectedRequirements", "request"],
+            "properties": {
+              "paymentRequired": { "$ref": "#/components/schemas/PaymentRequired" },
+              "selectedRequirements": { "$ref": "#/components/schemas/PaymentRequirements" },
+              "request": { "$ref": "#/components/schemas/RequestContext" }
+            }
+          }
+        }
+      },
+      "FirewallDecision": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decision", "decisionId", "riskScore", "reasons", "fingerprint", "expiresAt"],
+        "properties": {
+          "decision": { "type": "string", "enum": ["allow", "deny", "review"] },
+          "decisionId": { "type": "string", "format": "uuid" },
+          "riskScore": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "reasons": { "type": "array", "items": { "type": "string" } },
+          "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "expiresAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "EvaluateResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["mode", "decision", "limitations"],
+        "properties": {
+          "mode": { "type": "string", "enum": ["paid"] },
+          "decision": { "$ref": "#/components/schemas/FirewallDecision" },
+          "limitations": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status", "service", "version", "payments"],
+        "properties": {
+          "status": { "type": "string", "const": "ok" },
+          "service": { "type": "string", "const": "x402-payment-firewall" },
+          "version": { "type": "string" },
+          "payments": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["enabled", "configured", "mode"],
+            "properties": {
+              "enabled": { "type": "boolean" },
+              "configured": { "type": "boolean" },
+              "mode": { "type": "string", "enum": ["free", "x402"] },
+              "network": { "type": "string" },
+              "price": { "type": "string" },
+              "resource": { "type": "string", "format": "uri" }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      },
+      "PaymentRequiredError": {
+        "type": "object",
+        "required": ["error", "service", "documentation"],
+        "properties": {
+          "error": { "type": "string", "const": "payment_required" },
+          "service": { "type": "string", "const": "x402-payment-firewall" },
+          "documentation": { "type": "string", "format": "uri" }
+        }
+      }
+    }
+  }
+}

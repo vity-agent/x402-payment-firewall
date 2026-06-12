@@ -34,6 +34,16 @@ GET  /api/health
 POST /api/evaluate
 ```
 
+Machine-readable discovery is published at:
+
+```text
+GET /openapi.json
+GET /.well-known/x402
+```
+
+The OpenAPI 3.1 document includes full request/response schemas, x402scan
+`x-payment-info`, and a free `security: []` declaration for `/api/health`.
+
 Hosted evaluation is stateless. It supports allowlists, recipient pinning,
 per-request limits, and request/resource binding. Daily budgets and duplicate
 protection stay in the local SDK because serverless memory is not durable.
