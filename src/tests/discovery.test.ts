@@ -45,6 +45,6 @@ test("marks health as free and evaluate as paid and invocable", async () => {
   assert.ok(evaluate?.responses?.["402"]);
   assert.equal(evaluate?.["x-payment-info"]?.price?.mode, "fixed");
   assert.equal(evaluate?.["x-payment-info"]?.price?.currency, "USD");
-  assert.equal(evaluate?.["x-payment-info"]?.price?.amount, "0.001000");
+  assert.equal(evaluate?.["x-payment-info"]?.price?.amount, "0.100000");
   assert.deepEqual(evaluate?.["x-payment-info"]?.protocols, [{ x402: {} }]);
 });

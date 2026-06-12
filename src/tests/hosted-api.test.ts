@@ -94,7 +94,7 @@ test("builds a Base mainnet x402 seller configuration by default", () => {
   const config = getX402ServerConfig(hosted, {});
 
   assert.equal(config.network, "eip155:8453");
-  assert.equal(config.price, "$0.001");
+  assert.equal(config.price, "$0.10");
   assert.equal(config.facilitatorUrl, "https://facilitator.payai.network/");
   assert.equal(config.resourceUrl, "https://x402-payment-firewall.vercel.app/api/evaluate");
 });

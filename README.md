@@ -64,7 +64,7 @@ Paid mode defaults to Base mainnet and the PayAI facilitator:
 
 ```text
 X402_NETWORK=eip155:8453
-X402_PRICE=$0.001
+X402_PRICE=$0.10
 X402_FACILITATOR_URL=https://facilitator.payai.network
 PUBLIC_BASE_URL=https://x402-payment-firewall.vercel.app
 ```

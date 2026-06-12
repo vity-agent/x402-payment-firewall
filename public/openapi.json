@@ -51,7 +51,7 @@
                     "configured": true,
                     "mode": "x402",
                     "network": "eip155:8453",
-                    "price": "$0.001",
+                    "price": "$0.10",
                     "resource": "https://x402-payment-firewall.vercel.app/api/evaluate"
                   }
                 }
@@ -79,7 +79,7 @@
           "price": {
             "mode": "fixed",
             "currency": "USD",
-            "amount": "0.001000"
+            "amount": "0.100000"
           },
           "protocols": [
             {

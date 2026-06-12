@@ -36,7 +36,7 @@ export function getX402ServerConfig(
   const network = env.X402_NETWORK?.trim() || "eip155:8453";
   if (!/^[a-z0-9-]+:[A-Za-z0-9_-]+$/.test(network)) throw new Error("X402_NETWORK must use CAIP-2 format");
 
-  const price = env.X402_PRICE?.trim() || "$0.001";
+  const price = env.X402_PRICE?.trim() || "$0.10";
   if (!/^\$?(0|[1-9]\d*)(\.\d{1,6})?$/.test(price)) throw new Error("X402_PRICE must be a non-negative USD amount");
 
   const facilitatorUrl = validateHttpUrl(
