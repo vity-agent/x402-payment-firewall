@@ -77,7 +77,18 @@ test("denies resource substitution across domains", async () => {
 
   assert.equal(decision.decision, "deny");
   assert.ok(decision.reasons.includes("resource domain is not allowed"));
-  assert.ok(decision.reasons.includes("payment resource does not match request domain"));
+  assert.ok(decision.reasons.includes("payment resource does not match request URL"));
+});
+
+test("denies resource substitution on the same domain", async () => {
+  const firewall = createFirewall();
+  const input = payment();
+  input.paymentRequired.resource.url = "https://api.example.com/admin/export";
+
+  const decision = await firewall.evaluate(input);
+
+  assert.equal(decision.decision, "deny");
+  assert.ok(decision.reasons.includes("payment resource does not match request URL"));
 });
 
 test("denies a recipient that differs from the pinned address", async () => {
@@ -97,6 +108,22 @@ test("denies requirements that were not advertised by the server", async () => {
 
   assert.equal(decision.decision, "deny");
   assert.ok(decision.reasons.includes("selected payment requirements were not advertised by the server"));
+});
+
+test("denies modified timeout or extra fields not advertised by the server", async () => {
+  const firewall = createFirewall();
+  const timeoutInput = payment();
+  timeoutInput.selectedRequirements = { ...timeoutInput.selectedRequirements, maxTimeoutSeconds: 300 };
+  const extraInput = payment();
+  extraInput.selectedRequirements = { ...extraInput.selectedRequirements, extra: { feePayer: "attacker" } };
+
+  const timeoutDecision = await firewall.evaluate(timeoutInput);
+  const extraDecision = await firewall.evaluate(extraInput);
+
+  assert.equal(timeoutDecision.decision, "deny");
+  assert.equal(extraDecision.decision, "deny");
+  assert.ok(timeoutDecision.reasons.includes("selected payment requirements were not advertised by the server"));
+  assert.ok(extraDecision.reasons.includes("selected payment requirements were not advertised by the server"));
 });
 
 test("blocks a duplicate until a failed attempt is released", async () => {

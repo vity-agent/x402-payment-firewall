@@ -60,6 +60,31 @@ test("rejects malformed atomic amounts", () => {
   assert.throws(() => parseHostedEvaluateRequest(body), /atomic units/);
 });
 
+test("rejects an empty or stateful-only hosted policy", () => {
+  const empty = requestBody() as { policy: Record<string, unknown> };
+  empty.policy = {};
+  assert.throws(() => parseHostedEvaluateRequest(empty), /at least one stateless hosted rule/);
+
+  const statefulOnly = requestBody() as { policy: Record<string, unknown> };
+  statefulOnly.policy = {
+    dailyBudgets: [{ network: "eip155:84532", asset: USDC, amount: "20000" }],
+    duplicateTtlMs: 60_000,
+  };
+  assert.throws(() => parseHostedEvaluateRequest(statefulOnly), /at least one stateless hosted rule/);
+});
+
+test("requires a request URL for hosted resource binding", () => {
+  const body = requestBody() as { input: { request: Record<string, unknown> } };
+  delete body.input.request.url;
+  assert.throws(() => parseHostedEvaluateRequest(body), /request.url/);
+});
+
+test("rejects misspelled policy fields instead of silently ignoring them", () => {
+  const body = requestBody() as { policy: Record<string, unknown> };
+  body.policy.allowedNetwroks = ["eip155:84532"];
+  assert.throws(() => parseHostedEvaluateRequest(body), /unknown field: allowedNetwroks/);
+});
+
 test("loads the configured public pay-to address while payments stay disabled", () => {
   const config = getHostedApiConfig({
     PAYMENTS_ENABLED: "false",

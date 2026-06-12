@@ -5,7 +5,9 @@ The firewall never receives or stores a wallet private key.
 
 ## Status
 
-Early MVP. Use testnet and explicit limits while evaluating the package.
+Early MVP. The local SDK is the enforcement boundary. The hosted endpoint is a
+paid, stateless evaluator for caller-defined policies, not an independent
+merchant-reputation service or a replacement for wallet-side enforcement.
 
 ## Current protections
 
@@ -14,7 +16,7 @@ Early MVP. Use testnet and explicit limits while evaluating the package.
 - Per-request atomic-unit limits
 - Atomic daily budget reservations
 - Request fingerprinting and duplicate prevention
-- Request/resource domain binding
+- Exact request/resource URL binding
 - In-memory or JSONL audit logs
 - Structural adapter for the x402 V2 `onBeforePaymentCreation` hook
 
@@ -25,7 +27,7 @@ npm install
 npm test
 ```
 
-## Free hosted API
+## Hosted API
 
 The repository includes two Vercel functions:
 
@@ -48,6 +50,9 @@ available for monitoring but is intentionally excluded from agent discovery.
 Hosted evaluation is stateless. It supports allowlists, recipient pinning,
 per-request limits, and request/resource binding. Daily budgets and duplicate
 protection stay in the local SDK because serverless memory is not durable.
+Every hosted request must include its request URL and at least one non-empty
+stateless rule. A caller that supplies a permissive policy gets only the
+protection expressed by that policy.
 
 Set these Vercel environment variables:
 

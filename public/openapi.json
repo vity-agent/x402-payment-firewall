@@ -27,7 +27,7 @@
       "post": {
         "operationId": "evaluatePayment",
         "summary": "Evaluate an x402 payment before signing",
-        "description": "Checks an x402 v2 payment challenge against domain, network, asset, scheme, recipient, recipient-pinning, request-binding, and per-request amount policies. The hosted endpoint is stateless; daily budgets and duplicate prevention remain local SDK features.",
+        "description": "Checks an x402 v2 payment challenge against caller-defined domain, network, asset, scheme, recipient, recipient-pinning, exact resource URL, and per-request amount policies. At least one stateless policy rule is required. This is a policy evaluator, not an independent merchant reputation or wallet-security oracle. The hosted endpoint is stateless; daily budgets and duplicate prevention remain local SDK features.",
         "tags": ["Firewall"],
         "security": [
           {
@@ -197,6 +197,8 @@
       },
       "FirewallPolicy": {
         "type": "object",
+        "minProperties": 1,
+        "description": "Caller-defined policy. The API requires at least one non-empty stateless rule: an allowlist, recipient pin, or per-request limit.",
         "additionalProperties": false,
         "properties": {
           "allowedDomains": {
@@ -300,7 +302,7 @@
       "RequestContext": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["agentId"],
+        "required": ["agentId", "url"],
         "properties": {
           "agentId": { "type": "string", "minLength": 1 },
           "sessionId": { "type": "string" },

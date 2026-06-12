@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 
-import { domainMatches, normalizedHostname } from "./canonicalize.js";
+import { canonicalizeUrl, domainMatches, normalizedHostname } from "./canonicalize.js";
 import { createPaymentFingerprint } from "./fingerprint.js";
 import { MemoryAuditSink, MemoryBudgetStore, MemoryDuplicateStore, parseAtomicAmount } from "./stores.js";
 import type {
@@ -118,13 +119,17 @@ export class PaymentFirewall {
       reasons.push("resource domain is not allowed");
     }
 
-    if (resourceHost && (policy.bindRequestDomain ?? true) && input.request.url) {
-      try {
-        if (normalizedHostname(input.request.url) !== resourceHost) {
-          reasons.push("payment resource does not match request domain");
+    if (resourceHost && (policy.bindRequestDomain ?? true)) {
+      if (!input.request.url) {
+        reasons.push("request URL is required for resource binding");
+      } else {
+        try {
+          if (canonicalizeUrl(input.request.url) !== canonicalizeUrl(input.paymentRequired.resource.url)) {
+            reasons.push("payment resource does not match request URL");
+          }
+        } catch {
+          reasons.push("invalid request URL");
         }
-      } catch {
-        reasons.push("invalid request URL");
       }
     }
 
@@ -196,7 +201,9 @@ function requirementsEqual(left: PaymentEvaluationInput["selectedRequirements"],
     left.network === right.network &&
     left.amount === right.amount &&
     left.asset.toLowerCase() === right.asset.toLowerCase() &&
-    left.payTo.toLowerCase() === right.payTo.toLowerCase();
+    left.payTo.toLowerCase() === right.payTo.toLowerCase() &&
+    left.maxTimeoutSeconds === right.maxTimeoutSeconds &&
+    isDeepStrictEqual(left.extra, right.extra);
 }
 
 function includesCaseInsensitive(values: string[], candidate: string): boolean {
