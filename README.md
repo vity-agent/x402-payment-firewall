@@ -60,12 +60,12 @@ PAY_TO_ADDRESS=0xe3f47081bc0419cf6c41de287a813622c3e893b2
 `PAYMENTS_ENABLED` is omitted, the presence of `PAY_TO_ADDRESS` also enables
 paid mode. Set `PAYMENTS_ENABLED=false` only if you want to force free mode.
 
-Paid mode defaults to Base Sepolia and the public x402 test facilitator:
+Paid mode defaults to Base mainnet and the PayAI facilitator:
 
 ```text
-X402_NETWORK=eip155:84532
+X402_NETWORK=eip155:8453
 X402_PRICE=$0.001
-X402_FACILITATOR_URL=https://x402.org/facilitator
+X402_FACILITATOR_URL=https://facilitator.payai.network
 PUBLIC_BASE_URL=https://x402-payment-firewall.vercel.app
 ```
 
@@ -80,8 +80,8 @@ To test the full payment flow safely, change only:
 PAYMENTS_ENABLED=true
 ```
 
-Keep `X402_NETWORK=eip155:84532` until the endpoint has been tested with Base
-Sepolia USDC. Mainnet activation requires an explicit network/facilitator review.
+This configuration charges real USDC on Base mainnet. Set
+`PAYMENTS_ENABLED=false` to disable billing explicitly.
 
 Example request:
 
@@ -96,22 +96,22 @@ curl -X POST https://YOUR-DEPLOYMENT.vercel.app/api/evaluate \
 ```ts
 import { PaymentFirewall } from "x402-payment-firewall";
 
-const USDC_BASE_SEPOLIA = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
 const firewall = new PaymentFirewall({
   policy: {
     allowedDomains: ["api.example.com"],
-    allowedNetworks: ["eip155:84532"],
-    allowedAssets: [USDC_BASE_SEPOLIA],
+    allowedNetworks: ["eip155:8453"],
+    allowedAssets: [USDC_BASE],
     allowedSchemes: ["exact"],
     maxPerRequest: [{
-      network: "eip155:84532",
-      asset: USDC_BASE_SEPOLIA,
+      network: "eip155:8453",
+      asset: USDC_BASE,
       amount: "50000"
     }],
     dailyBudgets: [{
-      network: "eip155:84532",
-      asset: USDC_BASE_SEPOLIA,
+      network: "eip155:8453",
+      asset: USDC_BASE,
       amount: "500000"
     }]
   }

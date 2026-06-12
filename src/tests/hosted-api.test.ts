@@ -86,16 +86,16 @@ test("rejects an invalid configured pay-to address", () => {
   );
 });
 
-test("builds a Base Sepolia x402 seller configuration by default", () => {
+test("builds a Base mainnet x402 seller configuration by default", () => {
   const hosted = getHostedApiConfig({
     PAYMENTS_ENABLED: "true",
     PAY_TO_ADDRESS: "0xe3f47081bc0419cf6c41de287a813622c3e893b2",
   });
   const config = getX402ServerConfig(hosted, {});
 
-  assert.equal(config.network, "eip155:84532");
+  assert.equal(config.network, "eip155:8453");
   assert.equal(config.price, "$0.001");
-  assert.equal(config.facilitatorUrl, "https://x402.org/facilitator");
+  assert.equal(config.facilitatorUrl, "https://facilitator.payai.network/");
   assert.equal(config.resourceUrl, "https://x402-payment-firewall.vercel.app/api/evaluate");
 });
 

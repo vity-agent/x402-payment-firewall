@@ -33,14 +33,14 @@ export function getX402ServerConfig(
 ): X402ServerConfig {
   if (!config.payToAddress) throw new Error("PAY_TO_ADDRESS is required when payments are enabled");
 
-  const network = env.X402_NETWORK?.trim() || "eip155:84532";
+  const network = env.X402_NETWORK?.trim() || "eip155:8453";
   if (!/^[a-z0-9-]+:[A-Za-z0-9_-]+$/.test(network)) throw new Error("X402_NETWORK must use CAIP-2 format");
 
   const price = env.X402_PRICE?.trim() || "$0.001";
   if (!/^\$?(0|[1-9]\d*)(\.\d{1,6})?$/.test(price)) throw new Error("X402_PRICE must be a non-negative USD amount");
 
   const facilitatorUrl = validateHttpUrl(
-    env.X402_FACILITATOR_URL?.trim() || "https://x402.org/facilitator",
+    env.X402_FACILITATOR_URL?.trim() || "https://facilitator.payai.network",
     "X402_FACILITATOR_URL",
   );
   const publicBaseUrl = validateHttpUrl(
