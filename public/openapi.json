@@ -8,7 +8,7 @@
       "email": "yaumglyy@gmail.com",
       "url": "https://github.com/vity-agent/x402-payment-firewall"
     },
-    "x-guidance": "Use POST /api/evaluate before an agent signs an x402 payment. Submit the merchant PaymentRequired object, the selected payment requirements, request context, and the policy to enforce. A decision of allow means the supplied payment satisfies the stateless hosted checks; signing still happens locally. GET /api/health is free and reports service and payment configuration."
+    "x-guidance": "Use POST /api/evaluate before an agent signs an x402 payment. Submit the merchant PaymentRequired object, the selected payment requirements, request context, and the policy to enforce. A decision of allow means the supplied payment satisfies the stateless hosted checks; signing still happens locally."
   },
   "servers": [
     {
@@ -20,50 +20,9 @@
     {
       "name": "Firewall",
       "description": "Pre-signing x402 payment policy evaluation"
-    },
-    {
-      "name": "Service",
-      "description": "Free service metadata and health"
     }
   ],
   "paths": {
-    "/api/health": {
-      "get": {
-        "operationId": "getHealth",
-        "summary": "Get service and payment configuration",
-        "description": "Free endpoint that reports whether x402 payment mode is enabled and which network, price, and resource URL are configured.",
-        "tags": ["Service"],
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "Service is healthy",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
-                },
-                "example": {
-                  "status": "ok",
-                  "service": "x402-payment-firewall",
-                  "version": "0.1.0",
-                  "payments": {
-                    "enabled": true,
-                    "configured": true,
-                    "mode": "x402",
-                    "network": "eip155:8453",
-                    "price": "$0.10",
-                    "resource": "https://x402-payment-firewall.vercel.app/api/evaluate"
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerConfigurationError"
-          }
-        }
-      }
-    },
     "/api/evaluate": {
       "post": {
         "operationId": "evaluatePayment",
@@ -210,18 +169,6 @@
         "in": "header",
         "name": "PAYMENT-SIGNATURE",
         "description": "Base64-encoded x402 v2 payment payload. Obtain payment requirements from the PAYMENT-REQUIRED header returned by an unpaid request."
-      }
-    },
-    "responses": {
-      "ServerConfigurationError": {
-        "description": "Invalid server configuration",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            }
-          }
-        }
       }
     },
     "schemas": {
@@ -403,29 +350,6 @@
           "mode": { "type": "string", "enum": ["paid"] },
           "decision": { "$ref": "#/components/schemas/FirewallDecision" },
           "limitations": { "type": "array", "items": { "type": "string" } }
-        }
-      },
-      "HealthResponse": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["status", "service", "version", "payments"],
-        "properties": {
-          "status": { "type": "string", "const": "ok" },
-          "service": { "type": "string", "const": "x402-payment-firewall" },
-          "version": { "type": "string" },
-          "payments": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["enabled", "configured", "mode"],
-            "properties": {
-              "enabled": { "type": "boolean" },
-              "configured": { "type": "boolean" },
-              "mode": { "type": "string", "enum": ["free", "x402"] },
-              "network": { "type": "string" },
-              "price": { "type": "string" },
-              "resource": { "type": "string", "format": "uri" }
-            }
-          }
         }
       },
       "ErrorResponse": {

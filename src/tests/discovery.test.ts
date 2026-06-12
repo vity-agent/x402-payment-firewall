@@ -33,13 +33,11 @@ test("publishes the x402scan-required OpenAPI metadata", async () => {
   assert.equal(document.info?.contact?.email, "yaumglyy@gmail.com");
 });
 
-test("marks health as free and evaluate as paid and invocable", async () => {
+test("publishes only the paid and invocable evaluation resource", async () => {
   const document = await loadOpenApi();
-  const health = document.paths?.["/api/health"]?.get;
   const evaluate = document.paths?.["/api/evaluate"]?.post;
 
-  assert.deepEqual(health?.security, []);
-  assert.ok(health?.responses?.["200"]);
+  assert.deepEqual(Object.keys(document.paths ?? {}), ["/api/evaluate"]);
   assert.ok(evaluate?.requestBody);
   assert.ok(evaluate?.responses?.["200"]);
   assert.ok(evaluate?.responses?.["402"]);

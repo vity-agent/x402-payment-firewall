@@ -41,8 +41,9 @@ GET /openapi.json
 GET /.well-known/x402
 ```
 
-The OpenAPI 3.1 document includes full request/response schemas, x402scan
-`x-payment-info`, and a free `security: []` declaration for `/api/health`.
+The OpenAPI 3.1 document includes the paid `/api/evaluate` resource with full
+request/response schemas and x402scan `x-payment-info`. `/api/health` remains
+available for monitoring but is intentionally excluded from agent discovery.
 
 Hosted evaluation is stateless. It supports allowlists, recipient pinning,
 per-request limits, and request/resource binding. Daily budgets and duplicate
