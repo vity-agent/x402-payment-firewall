@@ -43,6 +43,12 @@ GET /openapi.json
 GET /.well-known/x402
 ```
 
+The stateful firewall API has a separate specification at:
+
+```text
+GET /firewall-openapi.json
+```
+
 The OpenAPI 3.1 document includes the paid `/api/evaluate` resource with full
 request/response schemas and x402scan `x-payment-info`. `/api/health` remains
 available for monitoring but is intentionally excluded from agent discovery.
@@ -88,6 +94,45 @@ PAYMENTS_ENABLED=true
 
 This configuration charges real USDC on Base mainnet. Set
 `PAYMENTS_ENABLED=false` to disable billing explicitly.
+
+## Stateful full firewall
+
+The `/api/v1/*` API stores policies and payment state in PostgreSQL. Unlike the
+public evaluator, callers cannot replace a stored policy during evaluation.
+
+```text
+POST /api/v1/policies
+GET  /api/v1/policies?id=POLICY_UUID
+POST /api/v1/evaluate
+POST /api/v1/decisions
+```
+
+All four operations require `Authorization: Bearer x402fw_live_...`.
+API keys are stored only as SHA-256 hashes. An allowed evaluation atomically
+reserves its daily budget and returns a short-lived authorization token bound
+to the tenant, policy, decision, and payment fingerprint. Report the result to
+`/api/v1/decisions` with outcome `settled` or `cancelled`.
+
+Local setup:
+
+```bash
+npm run db:migrate
+npm run db:bootstrap
+npm run db:smoke
+```
+
+Bootstrap writes the initial API key once to `.firewall-credentials.json` and
+generates `FIREWALL_SIGNING_SECRET` in `.env.local`. Both files are ignored by
+Git. Production requires these Vercel variables:
+
+```text
+DATABASE_URL=your Neon pooled connection string
+FIREWALL_SIGNING_SECRET=the exact value generated in .env.local
+```
+
+The full firewall currently uses API-key access rather than charging each
+stateful call through x402. This avoids requiring a payment merely to decide
+whether another payment is safe; billing can be attached to API-key plans.
 
 Example request:
 

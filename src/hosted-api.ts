@@ -45,9 +45,21 @@ export function parseHostedEvaluateRequest(body: unknown): HostedEvaluateRequest
   if (!isRecord(body.policy)) throw new Error("policy must be an object");
   if (!isRecord(body.input)) throw new Error("input must be an object");
 
-  validatePolicy(body.policy);
-  validateInput(body.input);
+  parseFirewallPolicy(body.policy, true);
+  parsePaymentEvaluationInput(body.input);
   return body as unknown as HostedEvaluateRequest;
+}
+
+export function parseFirewallPolicy(value: unknown, requireStatelessRule = false): FirewallPolicy {
+  if (!isRecord(value)) throw new Error("policy must be an object");
+  validatePolicy(value, requireStatelessRule);
+  return value as unknown as FirewallPolicy;
+}
+
+export function parsePaymentEvaluationInput(value: unknown): PaymentEvaluationInput {
+  if (!isRecord(value)) throw new Error("input must be an object");
+  validateInput(value);
+  return value as unknown as PaymentEvaluationInput;
 }
 
 export async function evaluateHostedRequest(
@@ -72,7 +84,7 @@ export async function evaluateHostedRequest(
   };
 }
 
-function validatePolicy(policy: Record<string, unknown>): void {
+function validatePolicy(policy: Record<string, unknown>, requireStatelessRule: boolean): void {
   rejectUnknownFields(policy, [
     "allowedDomains",
     "allowedNetworks",
@@ -97,8 +109,9 @@ function validatePolicy(policy: Record<string, unknown>): void {
     throw new Error("bindRequestDomain must be a boolean");
   }
   if (policy.duplicateTtlMs !== undefined &&
-      (!Number.isInteger(policy.duplicateTtlMs) || (policy.duplicateTtlMs as number) < 0)) {
-    throw new Error("duplicateTtlMs must be a non-negative integer");
+      (!Number.isInteger(policy.duplicateTtlMs) || (policy.duplicateTtlMs as number) < 0 ||
+       (policy.duplicateTtlMs as number) > 900_000)) {
+    throw new Error("duplicateTtlMs must be an integer between 0 and 900000");
   }
   if (policy.recipientPins !== undefined) {
     if (!isRecord(policy.recipientPins)) throw new Error("recipientPins must be an object");
@@ -118,7 +131,7 @@ function validatePolicy(policy: Record<string, unknown>): void {
   ].some(value => Array.isArray(value) && value.length > 0) ||
     (isRecord(policy.recipientPins) && Object.keys(policy.recipientPins).length > 0);
 
-  if (!hasEnforceableRule) {
+  if (requireStatelessRule && !hasEnforceableRule) {
     throw new Error("policy must include at least one stateless hosted rule");
   }
 }

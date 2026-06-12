@@ -3,5 +3,7 @@ dist/
 coverage/
 *.log
 .env
+.env.local
+.firewall-credentials.json
 .vercel/
 .DS_Store

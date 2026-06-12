@@ -22,7 +22,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "npm run check && npm run build && node --test dist/tests/*.test.js",
-    "check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.api.json"
+    "check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.api.json",
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:bootstrap": "node scripts/bootstrap.mjs",
+    "db:smoke": "npm run build && node scripts/smoke-test.mjs"
   },
   "keywords": [
     "x402",
@@ -37,11 +40,13 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@types/pg": "^8.20.0",
     "typescript": "^5.8.0"
   },
   "dependencies": {
     "@x402/core": "^2.14.0",
     "@x402/evm": "^2.14.0",
-    "@x402/extensions": "^2.14.0"
+    "@x402/extensions": "^2.14.0",
+    "pg": "^8.21.0"
   }
 }

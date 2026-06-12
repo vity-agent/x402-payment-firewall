@@ -4,6 +4,7 @@ export interface ApiRequest {
   method?: string;
   headers: IncomingHttpHeaders;
   body?: unknown;
+  query?: Record<string, string | string[] | undefined>;
 }
 
 export interface ApiResponse {

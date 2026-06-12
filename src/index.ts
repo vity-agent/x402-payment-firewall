@@ -2,7 +2,13 @@ export { PaymentFirewall } from "./firewall.js";
 export type { PaymentFirewallOptions } from "./firewall.js";
 export { canonicalizeUrl, domainMatches, normalizedHostname } from "./canonicalize.js";
 export { createPaymentFingerprint } from "./fingerprint.js";
-export { evaluateHostedRequest, getHostedApiConfig, parseHostedEvaluateRequest } from "./hosted-api.js";
+export {
+  evaluateHostedRequest,
+  getHostedApiConfig,
+  parseFirewallPolicy,
+  parseHostedEvaluateRequest,
+  parsePaymentEvaluationInput,
+} from "./hosted-api.js";
 export type { HostedApiConfig, HostedEvaluateRequest, HostedEvaluateResponse } from "./hosted-api.js";
 export { getX402ServerConfig } from "./x402-server.js";
 export type { X402ServerConfig } from "./x402-server.js";

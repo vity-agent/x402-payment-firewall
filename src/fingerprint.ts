@@ -18,7 +18,19 @@ export function createPaymentFingerprint(input: PaymentEvaluationInput): string 
     amount: requirement.amount,
     asset: requirement.asset.toLowerCase(),
     payTo: requirement.payTo.toLowerCase(),
+    maxTimeoutSeconds: requirement.maxTimeoutSeconds ?? null,
+    extra: canonicalizeJson(requirement.extra ?? null),
   });
 
   return `sha256:${createHash("sha256").update(material).digest("hex")}`;
+}
+
+function canonicalizeJson(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalizeJson);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, nested]) => [key, canonicalizeJson(nested)]));
+  }
+  return value;
 }

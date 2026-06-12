@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { PaymentFirewall } from "../firewall.js";
+import { createPaymentFingerprint } from "../fingerprint.js";
 import { MemoryAuditSink } from "../stores.js";
 import type { PaymentEvaluationInput } from "../types.js";
 
@@ -124,6 +125,15 @@ test("denies modified timeout or extra fields not advertised by the server", asy
   assert.equal(extraDecision.decision, "deny");
   assert.ok(timeoutDecision.reasons.includes("selected payment requirements were not advertised by the server"));
   assert.ok(extraDecision.reasons.includes("selected payment requirements were not advertised by the server"));
+});
+
+test("fingerprints bind timeout and canonicalized extra fields", () => {
+  const first = payment({ maxTimeoutSeconds: 300, extra: { version: "2", name: "USD Coin" } });
+  const reordered = payment({ maxTimeoutSeconds: 300, extra: { name: "USD Coin", version: "2" } });
+  const changed = payment({ maxTimeoutSeconds: 301, extra: { name: "USD Coin", version: "2" } });
+
+  assert.equal(createPaymentFingerprint(first), createPaymentFingerprint(reordered));
+  assert.notEqual(createPaymentFingerprint(first), createPaymentFingerprint(changed));
 });
 
 test("blocks a duplicate until a failed attempt is released", async () => {

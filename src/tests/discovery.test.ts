@@ -46,3 +46,15 @@ test("publishes only the paid and invocable evaluation resource", async () => {
   assert.equal(evaluate?.["x-payment-info"]?.price?.amount, "0.100000");
   assert.deepEqual(evaluate?.["x-payment-info"]?.protocols, [{ x402: {} }]);
 });
+
+test("publishes a separate authenticated full-firewall contract", async () => {
+  const contents = await readFile(new URL("../../public/firewall-openapi.json", import.meta.url), "utf8");
+  const document = JSON.parse(contents) as OpenApiDocument;
+
+  assert.equal(document.openapi, "3.1.0");
+  assert.deepEqual(Object.keys(document.paths ?? {}).sort(), [
+    "/api/v1/decisions",
+    "/api/v1/evaluate",
+    "/api/v1/policies",
+  ]);
+});
